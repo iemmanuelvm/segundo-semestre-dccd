@@ -12,14 +12,13 @@ import torch.nn.functional as F
 from torch.utils.data import Dataset, DataLoader
 
 
-# Diccionario de clases (ejemplo, cambia los nombres según tus clases reales)
 class_names = {
     0: "EEG",
-    1: "CHEW",
-    2: "ELPP",
-    3: "EOG",
-    4: "EMG",
-    5: "SHIV",
+    1: "Chewing",
+    2: "Electrode pop",
+    3: "Eye movement",
+    4: "Muscle",
+    5: "Shiver",
 }
 
 
@@ -42,13 +41,15 @@ class AlignedEEGDataset(Dataset):
 
     def apply_stft(self, segment):
         eeg_tensor = torch.tensor(segment, dtype=torch.float32)
-        stft_result = torch.stft(eeg_tensor, n_fft=self.n_fft, hop_length=self.hop_length, 
+        stft_result = torch.stft(eeg_tensor, n_fft=self.n_fft, hop_length=self.hop_length,
                                  return_complex=True).abs()
         return stft_result
 
     def normalize_minmax(self, tensor):
-        min_val = tensor.min(dim=-1, keepdim=True)[0].min(dim=-2, keepdim=True)[0]
-        max_val = tensor.max(dim=-1, keepdim=True)[0].max(dim=-2, keepdim=True)[0]
+        min_val = tensor.min(
+            dim=-1, keepdim=True)[0].min(dim=-2, keepdim=True)[0]
+        max_val = tensor.max(
+            dim=-1, keepdim=True)[0].max(dim=-2, keepdim=True)[0]
         return (tensor - min_val) / (max_val - min_val + 1e-8)
 
     def normalize_zscore(self, tensor):
@@ -81,12 +82,14 @@ def load_model():
         def __init__(self, in_channels, out_channels, stride=1, downsample=None):
             super(ResidualBlock2D, self).__init__()
             self.conv1 = nn.Sequential(
-                nn.Conv2d(in_channels, out_channels, kernel_size=3, stride=stride, padding=1),
+                nn.Conv2d(in_channels, out_channels,
+                          kernel_size=3, stride=stride, padding=1),
                 nn.BatchNorm2d(out_channels),
                 nn.ReLU()
             )
             self.conv2 = nn.Sequential(
-                nn.Conv2d(out_channels, out_channels, kernel_size=3, stride=1, padding=1),
+                nn.Conv2d(out_channels, out_channels,
+                          kernel_size=3, stride=1, padding=1),
                 nn.BatchNorm2d(out_channels)
             )
             self.downsample = downsample
@@ -125,11 +128,13 @@ def load_model():
             downsample = None
             if stride != 1 or self.in_channels != out_channels:
                 downsample = nn.Sequential(
-                    nn.Conv2d(self.in_channels, out_channels, kernel_size=1, stride=stride),
+                    nn.Conv2d(self.in_channels, out_channels,
+                              kernel_size=1, stride=stride),
                     nn.BatchNorm2d(out_channels),
                 )
             layers = []
-            layers.append(block(self.in_channels, out_channels, stride, downsample))
+            layers.append(
+                block(self.in_channels, out_channels, stride, downsample))
             self.in_channels = out_channels
             for _ in range(1, blocks):
                 layers.append(block(self.in_channels, out_channels))
@@ -148,7 +153,8 @@ def load_model():
             return logits, x  # (logits, features)
 
     model = ResNet2D(ResidualBlock2D, [2, 2, 2, 2], num_classes=6)
-    model.load_state_dict(torch.load('best_model_target_stft_da.pt', map_location='cpu'))
+    model.load_state_dict(torch.load(
+        'final_model_stft.pt', map_location='cpu'))
     model.eval()
     return model
 

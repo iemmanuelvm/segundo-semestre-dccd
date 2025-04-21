@@ -177,5 +177,9 @@ data/
 features/
 variables/
 v3.0.1/
-*.pt
-training_metrics_stft.csv
+best_model_source_stft_da.pt
+best_model_target_stft_da.pt
+NEW_MODEL
+metrics
+Untitled Folder
+toolbox/__pycache__/
